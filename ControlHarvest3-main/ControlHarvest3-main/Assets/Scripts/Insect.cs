@@ -2,8 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Insect : MonoBehaviour
+
+public class Insect : MonoBehaviour, AgentFactory
 {
+
+
+    // generate ID to Micelio
+    private string id_agent = Agent.GenerateAgentID();
+
+
     private Rigidbody2D body;
     private float delta;
     private float energy;
@@ -45,7 +52,7 @@ public class Insect : MonoBehaviour
         delta = 0f;
         //start movement
         actualSpeed = moveMaxSpeed;
-        body.velocity = new Vector2(moveMaxSpeed,0);
+        body.velocity = new Vector2(moveMaxSpeed, 0);
         //call change direction method
         ChangeDirection();
         //start energy
@@ -76,9 +83,10 @@ public class Insect : MonoBehaviour
     }
 
 
-    private void OnTriggerEnter2D(Collider2D other) {
+    private void OnTriggerEnter2D(Collider2D other)
+    {
         // Cone of view trigger
-        if(other.gameObject.layer == 11 || other.gameObject.layer == 9)
+        if (other.gameObject.layer == 11 || other.gameObject.layer == 9)
         {
             View(other);
         }
@@ -87,7 +95,7 @@ public class Insect : MonoBehaviour
         {
             // Collision with prey tag
             string[] preys = prey.Split(',');
-            foreach(string p in prey.Split(','))
+            foreach (string p in prey.Split(','))
             {
                 //if it collides with an object that is a prey
                 if (other.gameObject.CompareTag(p) && canPrey)
@@ -98,10 +106,10 @@ public class Insect : MonoBehaviour
                 }
             }
             // Collision with others of same tag
-            if(other.CompareTag(gameObject.tag))
+            if (other.CompareTag(gameObject.tag))
             {
                 //check if reproduction will occur
-                if (Random.Range(0,100) < reproduceRate && canReproduce && energy >= 30 && other.GetComponent<Insect>().energy >=30)
+                if (Random.Range(0, 100) < reproduceRate && canReproduce && energy >= 30 && other.GetComponent<Insect>().energy >= 30)
                 {
                     //change reproduce flag
                     canReproduce = false;
@@ -128,7 +136,7 @@ public class Insect : MonoBehaviour
         foreach (string p in prey.Split(','))
         {
             //if it collides with an object that is a prey, canPrey and is inside forageTax
-            if (other.gameObject.CompareTag(p) && canPrey && Random.Range(0,100) < forageTax)
+            if (other.gameObject.CompareTag(p) && canPrey && Random.Range(0, 100) < forageTax)
             {
                 Debug.Log("prey");
                 //Choose Prey Angle to tilt
@@ -144,7 +152,7 @@ public class Insect : MonoBehaviour
                 this.transform.LookAt(other.transform);
                 // Change the movement direction
                 //body.velocity = move * actualSpeed;
-                
+
             }
         }
         // TODO: go towards food
@@ -184,23 +192,37 @@ public class Insect : MonoBehaviour
         {
             energy = energyMax;
         }
+        //send prey log
+        /*Activity preylog = new Activity("prey", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+        preylog.SetPosition(this.transform.position.x, this.transform.position.y);
+        preylog.AddAgent(this, "predator");
+        micelio.SendActivity(preylog);*/
+
+
         //destroy preyed object
-        Destroy(other.gameObject,1);
+        Destroy(other.gameObject, 1);
     }
 
     //reproduction method
     IEnumerator Reproduce()
     {
-        Debug.Log("reproduce");
+ 
         // stop the object
         body.velocity *= 0.01f;
         delta = moveFrequency - reproduceDelay;
         //loose energy
         energy -= 25;
         audioSource.PlayOneShot(reproduce);
-    //instantiate a new object on this object position
-    Vector3 place = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y, 0);
+        //instantiate a new object on this object position
+        Vector3 place = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y, 0);
         GameObject obj = Instantiate(gameObject, place, Quaternion.identity);
+
+        //reproduction log
+        /*Activity reproducelog = new Activity("Reproduce", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+        reproducelog.SetPosition(this.transform.position.x, this.transform.position.y);
+        reproducelog.AddAgent(this, "Reproductor");
+        micelio.SendActivity(reproducelog);*/
+
         yield return new WaitForSeconds(reproduceDelay);
         //can reproduce again after a delay
         canReproduce = true;
@@ -237,14 +259,14 @@ public class Insect : MonoBehaviour
         if (energy <= 0)
         {
             audioSource.PlayOneShot(dying);
-           
-            Destroy(gameObject,2.0f);
+
+            Destroy(gameObject, 2.0f);
         }
         else
         {
             StartCoroutine(Energyloss(1));
         }
-        
+
 
     }
     IEnumerator Reproducestart()
@@ -272,5 +294,16 @@ public class Insect : MonoBehaviour
     {
         yield return new WaitForSeconds(3);
         canPrey = true;
+    }
+
+    //generate agent information
+    public Agent GetAgent()
+    {
+        Agent a = new Agent(id_agent, this.name, this.GetType().Name);
+
+        //a.AddProperty("munição", municao);
+        //a.AddProperty("pontos de vida", hp);
+        //a.AddProperty("patente", patente);
+        return a;
     }
 }

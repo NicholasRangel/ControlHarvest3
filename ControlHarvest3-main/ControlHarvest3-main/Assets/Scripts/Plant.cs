@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Plant : MonoBehaviour
+public class Plant : MonoBehaviour, AgentFactory
 {
+    // generate ID to Micelio
+    private string id_agent = Agent.GenerateAgentID();  
+  
     public int cost, profit, growthDelay, nutritionalValueMax;
     public int nutritionalValue;
     public bool colectable;
@@ -41,5 +44,16 @@ public class Plant : MonoBehaviour
         colectable = true;
         nutritionalValue = nutritionalValueMax;
         spriteRenderer.sprite = spriteArray[3];
+    }
+    
+    // generate agent information
+    public Agent GetAgent()
+    {
+        Agent a = new Agent(id_agent, this.name,this.GetType().Name);
+ 
+        //a.AddProperty("munição", municao);
+        //a.AddProperty("pontos de vida", hp);
+        //a.AddProperty("patente", patente);
+        return a;
     }
 }

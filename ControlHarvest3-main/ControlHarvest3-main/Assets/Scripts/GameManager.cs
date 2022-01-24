@@ -10,9 +10,13 @@ using UnityEngine.Localization.Settings;
 
 
 
+
 public class GameManager : MonoBehaviour
 {
-    
+    //generate Micelio instance
+    public string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NDMwNTY2MDQsInN1YiI6ImM4NDAwMDIyLWMyZTMtNDg1ZS04MGYwLWZkMTQ2ZjZhNDA5MSJ9.hbIIEwPGw4FiqWj2Vsjl-CCXW5xh47sVleiFW1NoPek";
+    public static Micelio micelio;
+
     public int initialMoney;
 
     //grid object
@@ -60,6 +64,9 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        micelio = new Micelio(token);
+        
+        
         Time.timeScale = 1;
         audioSource = GetComponent<AudioSource>();
         Debug.Log(LocalizationSettings.SelectedLocale.name);
@@ -164,7 +171,15 @@ public class GameManager : MonoBehaviour
                             else if (obj.GetComponent<Plant>().tag == "corn") totalPlants[2] += 1;
                             else if (obj.GetComponent<Plant>().tag == "tomato") totalPlants[3] += 1;
 
+                            //harvest log
+                            Activity harvestlog = new Activity("Harvest", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+                            harvestlog.SetPosition(obj.transform.position.x, this.transform.position.y);
+                            harvestlog.AddAgent(obj.GetComponent<Plant>(), "harvested");
+                            micelio.SendActivity(harvestlog);
+
+
                             Destroy(obj, 0);
+
                             selectedButton = buttons.none;
                         }
                         //if button net, check click on insects
@@ -175,6 +190,13 @@ public class GameManager : MonoBehaviour
                             
                             selectedButton = buttons.none;
                             audioSource.PlayOneShot(dying);
+
+                            //remove log
+                            Activity removelog = new Activity("Remove", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+                            removelog.SetPosition(this.transform.position.x, this.transform.position.y);
+                            removelog.AddAgent(obj.GetComponent<Insect>(), "bug");
+                            micelio.SendActivity(removelog);
+
                             Destroy(obj);
                         }
                     }
@@ -193,11 +215,15 @@ public class GameManager : MonoBehaviour
         }
         if (money < 50 && !FindObjectOfType<Plant>())
         {
+            micelio.CloseSession();
             SceneManager.LoadScene("GameOver");
+            
         }
         if (money < 0)
         {
+            micelio.CloseSession();
             SceneManager.LoadScene("GameOver");
+            
         }
         
     }
@@ -213,6 +239,12 @@ public class GameManager : MonoBehaviour
             //spend money to buy the object
             SpendMoney(prefabs[(int)selectedButton].GetComponent<Plant>().cost);
             timeToMeta = 0;
+
+            //plant log
+            Activity plantlog = new Activity("Plant", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+            plantlog.SetPosition(obj.transform.position.x, this.transform.position.y);
+            plantlog.AddAgent(obj.GetComponent<Plant>(), "Seeded");
+            micelio.SendActivity(plantlog);
 
         }
         // Insect button
@@ -463,6 +495,10 @@ public class GameManager : MonoBehaviour
         var gScore = source["global"]["score"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
         gScore.Value = 0;
         SceneManager.LoadScene("Game");
+
+        //Start the game Session to Micelio
+        Session s = new Session("pt-br", "Default");
+        micelio.StartSession(s);
     }
 
     //method to rank button on main menu scene
@@ -695,6 +731,7 @@ public class GameManager : MonoBehaviour
     //method to quit scene Button
     public void BtnQuit()
     {
+        micelio.CloseSession();
         SceneManager.LoadScene("GameOver");
     }
     
