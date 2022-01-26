@@ -32,7 +32,7 @@ public class GameManager : MonoBehaviour
     //texts and prefabs objects
     public Text moneyCounter, metaText;
     public int score = 0;
-    public TextMeshProUGUI textMenu;
+    public TextMeshProUGUI textMenu, textMigration;
     public GameObject menu;
     public GameObject infomenu;
     public GameObject migrationInfo;
@@ -138,9 +138,9 @@ public class GameManager : MonoBehaviour
                 //get mouse position and check grid position object
                 Vector2 gridpos = new Vector2(place.x, place.y);
                 RaycastHit2D hit = Physics2D.Raycast(gridpos, Vector2.zero,Mathf.Infinity,1 << LayerMask.NameToLayer("Plants"));
-                
+                RaycastHit2D hit2 = Physics2D.Raycast(place, Vector2.zero, Mathf.Infinity,1 << 5);
                 //check if have no plant in place
-                if (hit.collider == null)
+                if (hit.collider == null && hit2.collider == null)
                 {
                     
                     ToPlace(place);
@@ -592,7 +592,7 @@ public class GameManager : MonoBehaviour
 
             if (insect.GetComponent<Insect>().prey == plantName)
             {
-                Migrate(System.Array.IndexOf(plaguesPrefabs, insect));
+                Migrate(System.Array.IndexOf(plaguesPrefabs, insect),true);
             }
         }
 
@@ -648,21 +648,42 @@ public class GameManager : MonoBehaviour
         metaText.text = "";
     }
 
-    //migrate method. Instantiate a random quantity of a random plague
-    public void Migrate(int plague = 4)
+    //migrate method. Instantiate a random quantity of a random plague and if is from meta
+    public void Migrate(int plague = 4, bool migrationMeta = false)
     {
         //random plague
         if (plague == 4)
         {
             plague = Random.Range(0, 4);
         }
-        
 
-        for (int i = 0; i < Random.Range(3, 6); i++)
+
+        int pNumber = Random.Range(3, 6);
+        for (int i = 0; i < pNumber; i++)
         {
             Vector3 place = new Vector3(Random.Range(-12, 12), Random.Range(-3, 3), 0);
             GameObject obj = Instantiate(plaguesPrefabs[plague], place, Quaternion.identity);
         }
+        
+        
+
+        //set the table reference for text of meta
+        if (!migrationMeta)
+        {
+            // Get our GlobalVariablesSource
+            var source = LocalizationSettings.StringDatabase.SmartFormatter.GetSourceExtension<PersistentVariablesSource>();
+            var mNumber = source["global"]["mNumber"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
+
+            mNumber.Value = pNumber;
+
+            localizedtext.SetReference("UItext", "plagueEntry");
+            textMigration.text = localizedtext.GetLocalizedString();
+
+            StartCoroutine(OpenMigrationInfo());
+        }
+              
+        
+
     }
 
     //check if have more then 4 predators on game at same time
@@ -731,6 +752,8 @@ public class GameManager : MonoBehaviour
     {
         migrationInfo.SetActive(true);
         audioSource.PlayOneShot(message);
+
+
         yield return new WaitForSeconds(3);
         migrationInfo.SetActive(false);
 
