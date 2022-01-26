@@ -50,7 +50,7 @@ public class GameManager : MonoBehaviour
     private enum buttons {grass, kale, corn, tomato, beetle, ladyb, scythe, net, none};
     private GameObject[] prefabs, plaguesPrefabs;
     private buttons selectedButton;
-    private bool canClick, canMeta = true;
+    private bool canMeta = true;
     private int timeToMeta, timeToMetaLimit = 30;
     private float timeToPenalty;
     
@@ -70,7 +70,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1;
         audioSource = GetComponent<AudioSource>();
         Debug.Log(LocalizationSettings.SelectedLocale.name);
-        Input.simulateMouseWithTouches = true;
+        
         //start array of totalPlants harvested
         totalPlants = new int[4];
 
@@ -98,8 +98,6 @@ public class GameManager : MonoBehaviour
         
         //start selectedbutton
         selectedButton = buttons.none;
-        //start varial for click control
-        canClick = false;
 
         //initial level
         level = 0;
@@ -121,20 +119,22 @@ public class GameManager : MonoBehaviour
 
         timeToPenalty += Time.deltaTime;
 
+        
         //check click on game field after selected a button
-        if (Input.GetMouseButtonDown(0) && canClick && selectedButton != buttons.none) {
-            //Touch touch = Input.GetTouch(0);
+        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began) { 
+
             //get click position
-            Vector3 place = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            //Vector3 place = Camera.main.ScreenToWorldPoint(touch.position);
+            Touch touch = Input.GetTouch(0);
+            Vector3 place = Camera.main.ScreenToWorldPoint(touch.position);
+           
 
             //click on plant or predator button
             if (selectedButton <= buttons.ladyb) {
+                
                 place.z = 0;
-
+                
                 Vector3Int placeInt = grid.WorldToCell(place);
                 place = grid.GetCellCenterWorld(placeInt);
-
                 //get mouse position and check grid position object
                 Vector2 gridpos = new Vector2(place.x, place.y);
                 RaycastHit2D hit = Physics2D.Raycast(gridpos, Vector2.zero,Mathf.Infinity,1 << LayerMask.NameToLayer("Plants"));
@@ -142,16 +142,17 @@ public class GameManager : MonoBehaviour
                 //check if have no plant in place
                 if (hit.collider == null)
                 {
+                    
                     ToPlace(place);
                 }
                 
-                
+
             }
             //scythe or net buttons selected
             else {
 
                 //get mouse position and check click on objects
-                Vector2 mousePos = new Vector2(place.x, place.y);
+                Vector2 mousePos = new Vector3(place.x, place.y);
                 RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero,Mathf.Infinity, (1 << LayerMask.NameToLayer("Insects") | (1 << LayerMask.NameToLayer("Plants"))));
                 if (hit.collider != null) {
                     
@@ -229,7 +230,7 @@ public class GameManager : MonoBehaviour
     }
 
     //method to place plants or predators
-    public void ToPlace(Vector3 place)
+    public void ToPlace(Vector2 place)
     {
         GameObject obj = Instantiate(prefabs[(int)selectedButton], place, Quaternion.identity);
 
@@ -476,18 +477,6 @@ public class GameManager : MonoBehaviour
         menu.SetActive(false);
     }
 
-    //method to disable clicks
-    public void DisableClick()
-    {
-        canClick = false;
-    }
-
-    //method to enable clicks
-    public void EnableClick()
-    {
-        canClick = true;
-    }
-
     //method to start button on main menu scene
     public void BtnStart()
     {
@@ -498,6 +487,7 @@ public class GameManager : MonoBehaviour
 
         //Start the game Session to Micelio
         Session s = new Session("pt-br", "Default");
+        //s.SetSessionGroup("teste");
         micelio.StartSession(s);
     }
 
@@ -707,6 +697,7 @@ public class GameManager : MonoBehaviour
     public void PauseGame()
     {
         Time.timeScale = 0;
+        selectedButton = buttons.none;
     }
 
     //method to resume the game

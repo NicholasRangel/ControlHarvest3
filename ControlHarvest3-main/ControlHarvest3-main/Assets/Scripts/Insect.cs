@@ -193,10 +193,11 @@ public class Insect : MonoBehaviour, AgentFactory
             energy = energyMax;
         }
         //send prey log
-        /*Activity preylog = new Activity("prey", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+        
+        Activity preylog = new Activity("prey", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
         preylog.SetPosition(this.transform.position.x, this.transform.position.y);
         preylog.AddAgent(this, "predator");
-        micelio.SendActivity(preylog);*/
+        GameManager.micelio.SendActivity(preylog);
 
 
         //destroy preyed object
