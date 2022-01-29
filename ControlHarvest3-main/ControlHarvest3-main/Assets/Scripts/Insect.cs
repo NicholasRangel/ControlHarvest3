@@ -138,7 +138,7 @@ public class Insect : MonoBehaviour, AgentFactory
             //if it collides with an object that is a prey, canPrey and is inside forageTax
             if (other.gameObject.CompareTag(p) && canPrey && Random.Range(0, 100) < forageTax)
             {
-                Debug.Log("prey");
+                //Debug.Log("prey");
                 //Choose Prey Angle to tilt
                 //Vector2 dir = other.transform.position - transform.position;
                 //float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
@@ -180,10 +180,26 @@ public class Insect : MonoBehaviour, AgentFactory
             other.gameObject.GetComponent<Insect>().canWalk = false;
             other.gameObject.GetComponent<Insect>().actualSpeed *= 0.01f;
             energy += other.GetComponent<Insect>().nutritionalValue;
+        
+            //send preyInsect log
+
+            Activity preylog = new Activity("prey", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+            preylog.SetPosition(this.transform.position.x, this.transform.position.y);
+            preylog.AddAgent(this, "predator");
+            preylog.AddAgent(other.GetComponent<Insect>(), "prey");
+            GameManager.micelio.SendActivity(preylog);
         }
         else
         {
             energy += other.GetComponent<Plant>().nutritionalValue;
+            //send prey log
+
+            Activity preylog = new Activity("prey", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+            preylog.SetPosition(this.transform.position.x, this.transform.position.y);
+            preylog.AddAgent(this, "predator");
+            preylog.AddAgent(other.GetComponent<Plant>(), "prey");
+            GameManager.micelio.SendActivity(preylog);
+
         }
         delta = moveFrequency - preyDelay;
         audioSource.PlayOneShot(bite);
@@ -192,13 +208,6 @@ public class Insect : MonoBehaviour, AgentFactory
         {
             energy = energyMax;
         }
-        //send prey log
-        
-        Activity preylog = new Activity("prey", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
-        preylog.SetPosition(this.transform.position.x, this.transform.position.y);
-        preylog.AddAgent(this, "predator");
-        GameManager.micelio.SendActivity(preylog);
-
 
         //destroy preyed object
         Destroy(other.gameObject, 1);
@@ -219,10 +228,11 @@ public class Insect : MonoBehaviour, AgentFactory
         GameObject obj = Instantiate(gameObject, place, Quaternion.identity);
 
         //reproduction log
-        /*Activity reproducelog = new Activity("Reproduce", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
+        Activity reproducelog = new Activity("Reproduce", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
         reproducelog.SetPosition(this.transform.position.x, this.transform.position.y);
         reproducelog.AddAgent(this, "Reproductor");
-        micelio.SendActivity(reproducelog);*/
+        reproducelog.AddAgent(obj.GetComponent<Insect>(), "children");
+        GameManager.micelio.SendActivity(reproducelog);
 
         yield return new WaitForSeconds(reproduceDelay);
         //can reproduce again after a delay
@@ -259,6 +269,12 @@ public class Insect : MonoBehaviour, AgentFactory
         //destroy object if energy is 0 or less
         if (energy <= 0)
         {
+            //Starvation Death log
+            Activity starvationlog = new Activity("StarvationDeath", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+            starvationlog.SetPosition(this.transform.position.x, this.transform.position.y);
+            starvationlog.AddAgent(this, "Insect");
+            GameManager.micelio.SendActivity(starvationlog);
+
             audioSource.PlayOneShot(dying);
 
             Destroy(gameObject, 2.0f);
@@ -302,7 +318,7 @@ public class Insect : MonoBehaviour, AgentFactory
     {
         Agent a = new Agent(id_agent, this.name, this.GetType().Name);
 
-        //a.AddProperty("munição", municao);
+        a.AddProperty("energy", energy);
         //a.AddProperty("pontos de vida", hp);
         //a.AddProperty("patente", patente);
         return a;

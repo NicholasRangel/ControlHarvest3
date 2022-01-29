@@ -219,13 +219,13 @@ public class GameManager : MonoBehaviour
         if (money < 50 && !FindObjectOfType<Plant>())
         {
             micelio.CloseSession();
-            SceneManager.LoadScene("GameOver");
+            GameOver();
             
         }
         if (money < 0)
         {
             micelio.CloseSession();
-            SceneManager.LoadScene("GameOver");
+            GameOver();
             
         }
         
@@ -736,18 +736,20 @@ public class GameManager : MonoBehaviour
         int p = beetles.Length/2 + ladyBugs.Length/2;
         if (p >= 5)
         {
-            gFine.Value = p * 60; 
-            SpendMoney(p*60);
-           
-            localizedtext.SetReference("UItext", "limitP");
-            textMenu.text = localizedtext.GetLocalizedString(localizedtext,"limitP");
-            
-           
+            gFine.Value = p * 60;
+            SpendMoney(p * 60);
 
+            localizedtext.SetReference("UItext", "limitP");
+            textMenu.text = localizedtext.GetLocalizedString(localizedtext, "limitP");
+
+            //Penalty log
+            Activity penaltylog = new Activity("penalty", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+            penaltylog.AddProperty("Predators", p);
+            penaltylog.AddProperty("Fee", p * 60);
+            micelio.SendActivity(penaltylog);
 
             timeToPenalty = 0;
             OpenInfoMenu();
-            
         }
     }
     
@@ -781,6 +783,15 @@ public class GameManager : MonoBehaviour
     public void BtnQuit()
     {
         micelio.CloseSession();
+        GameOver();
+    }
+    public void GameOver()
+    {
+        // Get our GlobalVariablesSource
+        var source = LocalizationSettings.StringDatabase.SmartFormatter.GetSourceExtension<PersistentVariablesSource>();
+        var gScore = source["global"]["score"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
+        gScore.Value = score.value;
+
         SceneManager.LoadScene("GameOver");
     }
     
