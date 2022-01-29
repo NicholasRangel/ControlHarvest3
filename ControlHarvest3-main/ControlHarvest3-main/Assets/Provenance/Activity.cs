@@ -24,6 +24,7 @@ public class Activity
 		this.time = time;
 		agents = new List<Agent>();
 		entities = new List<Entity>();
+		this.properties = new Dictionary<string, object>();
 
 	}
 

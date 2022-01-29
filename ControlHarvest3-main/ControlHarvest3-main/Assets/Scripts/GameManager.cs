@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
     //generate Micelio instance
     public string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NDMwNTY2MDQsInN1YiI6ImM4NDAwMDIyLWMyZTMtNDg1ZS04MGYwLWZkMTQ2ZjZhNDA5MSJ9.hbIIEwPGw4FiqWj2Vsjl-CCXW5xh47sVleiFW1NoPek";
     public static Micelio micelio;
+    public static Score score;
 
     public int initialMoney;
 
@@ -31,7 +32,7 @@ public class GameManager : MonoBehaviour
 
     //texts and prefabs objects
     public Text moneyCounter, metaText;
-    public int score = 0;
+    
     public TextMeshProUGUI textMenu, textMigration;
     public GameObject menu;
     public GameObject infomenu;
@@ -65,11 +66,12 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         micelio = new Micelio(token);
-        
-        
+        score = new Score();
+        score.value = 0;
+
         Time.timeScale = 1;
         audioSource = GetComponent<AudioSource>();
-        Debug.Log(LocalizationSettings.SelectedLocale.name);
+        //Debug.Log(LocalizationSettings.SelectedLocale.name);
         
         //start array of totalPlants harvested
         totalPlants = new int[4];
@@ -173,8 +175,8 @@ public class GameManager : MonoBehaviour
                             else if (obj.GetComponent<Plant>().tag == "tomato") totalPlants[3] += 1;
 
                             //harvest log
-                            Activity harvestlog = new Activity("Harvest", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
-                            harvestlog.SetPosition(obj.transform.position.x, this.transform.position.y);
+                            Activity harvestlog = new Activity("Harvest", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+                            harvestlog.SetPosition(obj.transform.position.x, obj.transform.position.y);
                             harvestlog.AddAgent(obj.GetComponent<Plant>(), "harvested");
                             micelio.SendActivity(harvestlog);
 
@@ -193,10 +195,10 @@ public class GameManager : MonoBehaviour
                             audioSource.PlayOneShot(dying);
 
                             //remove log
-                            Activity removelog = new Activity("Remove", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
-                            removelog.SetPosition(this.transform.position.x, this.transform.position.y);
-                            removelog.AddAgent(obj.GetComponent<Insect>(), "bug");
-                            micelio.SendActivity(removelog);
+                            Activity removePredatorlog = new Activity("RemovePredator", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+                            removePredatorlog.SetPosition(this.transform.position.x, obj.transform.position.y);
+                            removePredatorlog.AddAgent(obj.GetComponent<Insect>(), "bug");
+                            micelio.SendActivity(removePredatorlog);
 
                             Destroy(obj);
                         }
@@ -242,8 +244,8 @@ public class GameManager : MonoBehaviour
             timeToMeta = 0;
 
             //plant log
-            Activity plantlog = new Activity("Plant", System.DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss"));
-            plantlog.SetPosition(obj.transform.position.x, this.transform.position.y);
+            Activity plantlog = new Activity("Plant", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+            plantlog.SetPosition(obj.transform.position.x, obj.transform.position.y);
             plantlog.AddAgent(obj.GetComponent<Plant>(), "Seeded");
             micelio.SendActivity(plantlog);
 
@@ -253,6 +255,12 @@ public class GameManager : MonoBehaviour
         {
             //spend money to buy the object
             SpendMoney(prefabs[(int)selectedButton].GetComponent<Insect>().cost);
+
+            //InsertPredator log
+            Activity Insertpredatorlog = new Activity("InsertPredator", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+            Insertpredatorlog.SetPosition(obj.transform.position.x, obj.transform.position.y);
+            Insertpredatorlog.AddAgent(obj.GetComponent<Insect>(), "predator");
+            micelio.SendActivity(Insertpredatorlog);
         }
         selectedButton = buttons.none;
     }
@@ -262,7 +270,7 @@ public class GameManager : MonoBehaviour
     {
         // Get our GlobalVariablesSource
         var source = LocalizationSettings.StringDatabase.SmartFormatter.GetSourceExtension<PersistentVariablesSource>();
-        var gScore = source["global"]["score"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
+        //var gScore = source["global"]["score"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
         audioSource.PlayOneShot(coins);
         money += value;
         moneyCounter.text = money.ToString();
@@ -271,7 +279,7 @@ public class GameManager : MonoBehaviour
             maxMoney = money;
 
             //global score update
-            gScore.Value = maxMoney;
+            score.value += value;
         }
 
         //check money level
@@ -481,8 +489,8 @@ public class GameManager : MonoBehaviour
     public void BtnStart()
     {
         var source = LocalizationSettings.StringDatabase.SmartFormatter.GetSourceExtension<PersistentVariablesSource>();
-        var gScore = source["global"]["score"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
-        gScore.Value = 0;
+        //var gScore = source["global"]["score"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
+        score.value = 0;
         SceneManager.LoadScene("Game");
 
         //Start the game Session to Micelio
@@ -551,7 +559,7 @@ public class GameManager : MonoBehaviour
         var mPlant = source["global"]["mPlant"] as UnityEngine.Localization.SmartFormat.PersistentVariables.StringVariable;
         var mTime = source["global"]["mTime"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
         var mNumber = source["global"]["mNumber"] as UnityEngine.Localization.SmartFormat.PersistentVariables.IntVariable;
-        Debug.Log(mPlant);
+        //Debug.Log(mPlant);
 
     
         // random plant
@@ -599,7 +607,7 @@ public class GameManager : MonoBehaviour
         //define total plant to the meta and put on global Variable
         mPlants = level * 3;
         mNumber.Value = mPlants;
-        Debug.Log(mNumber);
+        //Debug.Log(mNumber);
 
         //set the table reference for text of meta
         localizedtext.SetReference("UItext", "meta");
@@ -609,12 +617,20 @@ public class GameManager : MonoBehaviour
         // meta variables
         timeToMeta = 0;
         int metaTimeLimit = level*20;
+        Debug.Log(metaTimeLimit);
         int metaTime = metaTimeLimit;
         int actualplants = totalPlants[plant];
         //Debug.Log(actualplants);
         mTime.Value = metaTimeLimit;
 
         OpenInfoMenu();
+
+        //meta log
+        Activity metalog = new Activity("Meta", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
+        //metalog.SetPosition(obj.transform.position.x, obj.transform.position.y);
+        metalog.AddProperty("TimeLimit", metaTimeLimit);
+        metalog.AddProperty("Type", plantName);
+        metalog.AddProperty("quantity", mPlants);
 
         // loop of count metaTime
         for (int i = 0;i < metaTimeLimit; i++)
@@ -627,14 +643,20 @@ public class GameManager : MonoBehaviour
         }
         int harvestsMade = totalPlants[plant] - actualplants;
 
+        //harvestmade meta log 
+        metalog.AddProperty("harvestsMade", harvestsMade);
+
         //check result of meta
-        Debug.Log(harvestsMade);
+        //Debug.Log(harvestsMade);
         if (harvestsMade >= mPlants)
         {
             localizedtext.SetReference("UItext", "archieveMeta");
             textMenu.text = localizedtext.GetLocalizedString(localizedtext, "archieveMeta");
             OpenInfoMenu();
             EarnMoney(250);
+
+            //result meta log
+            metalog.AddProperty("Result", true);
         }
         else
         {
@@ -643,9 +665,16 @@ public class GameManager : MonoBehaviour
             textMenu.text = localizedtext.GetLocalizedString(localizedtext, "failMeta");
             OpenInfoMenu();
             SpendMoney(300);
+            
+            //result meta log
+            metalog.AddProperty("Result", false);
         }
         canMeta = true;
         metaText.text = "";
+
+        //metalog send
+        micelio.SendActivity(metalog);
+
     }
 
     //migrate method. Instantiate a random quantity of a random plague and if is from meta
@@ -656,13 +685,17 @@ public class GameManager : MonoBehaviour
         {
             plague = Random.Range(0, 4);
         }
-
+        //start Migration log
+        Activity migrationlog = new Activity("Migration", Time.timeSinceLevelLoad.ToString("yyyy/MM/dd hh:mm:ss"));
 
         int pNumber = Random.Range(3, 6);
         for (int i = 0; i < pNumber; i++)
         {
             Vector3 place = new Vector3(Random.Range(-12, 12), Random.Range(-3, 3), 0);
             GameObject obj = Instantiate(plaguesPrefabs[plague], place, Quaternion.identity);
+            
+            //Include on Migration log
+            migrationlog.AddAgent(obj.GetComponent<Insect>(), "Insect");
         }
         
         
@@ -681,8 +714,12 @@ public class GameManager : MonoBehaviour
 
             StartCoroutine(OpenMigrationInfo());
         }
-              
-        
+        //complement migration log
+        migrationlog.AddProperty("TotalNumber",pNumber);
+        migrationlog.AddProperty("Meta", migrationMeta);
+        micelio.SendActivity(migrationlog);
+
+
 
     }
 

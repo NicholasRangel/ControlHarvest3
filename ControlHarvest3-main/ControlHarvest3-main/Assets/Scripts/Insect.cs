@@ -131,7 +131,7 @@ public class Insect : MonoBehaviour, AgentFactory
     //view method
     private void View(Collider2D other)
     {
-        Debug.Log("I see you");
+        //Debug.Log("I see you");
         string[] preys = prey.Split(',');
         foreach (string p in prey.Split(','))
         {
